@@ -206,7 +206,7 @@ jobs:
       with:
         context: .
         file: ./Dockerfile
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: false
         load: true
         tags: ${{ steps.meta.outputs.tags }}
@@ -216,18 +216,22 @@ jobs:
         
     - name: Test Docker image
       run: |
+        # Get the first tag for testing (single platform build)
+        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
         # Test that the image runs without errors
         docker run --rm --name otp-test \
           -e DATABASE_HOST=localhost \
           -e REDIS_HOST=localhost \
           -e JWT_SECRET=test-secret \
-          ${{ env.REGISTRY_URL }}/${{ github.repository }}:${{ github.sha }} \
+          ${IMAGE_TAG} \
           --help || echo "Docker image basic test completed"
           
     - name: Save Docker image
       if: github.event_name != 'pull_request'
       run: |
-        docker save ${{ env.REGISTRY_URL }}/${{ github.repository }}:${{ github.sha }} | gzip > otp-auth-image.tar.gz
+        # Get the first tag for saving (single platform build)
+        IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+        docker save ${IMAGE_TAG} | gzip > otp-auth-image.tar.gz
         
     - name: Upload Docker image artifact
       if: github.event_name != 'pull_request'
