@@ -27,7 +27,7 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -62,7 +62,7 @@ jobs:
         go fmt ./...
         
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-reports
         path: |
@@ -94,7 +94,7 @@ jobs:
       redis:
         image: redis:7-alpine
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli ping || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -121,7 +121,7 @@ jobs:
         go-version: ${{ env.GO_VERSION }}
         
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
@@ -136,15 +136,19 @@ jobs:
     - name: Install swag for Swagger docs
       run: go install github.com/swaggo/swag/cmd/swag@latest
       
-    - name: Install migrate tool
+    - name: Install tools
       run: |
+        # Install migrate tool
         curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
         sudo mv migrate /usr/local/bin/
+        # Install Redis CLI
+        sudo apt-get update
+        sudo apt-get install -y redis-tools postgresql-client
         
     - name: Wait for services to be ready
       run: |
         timeout 30s bash -c 'until pg_isready -h localhost -p 5432 -U otp_auth; do sleep 1; done'
-        timeout 30s bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done'
+        timeout 30s bash -c 'until redis-cli -h localhost -p 6379 ping | grep -q PONG; do sleep 1; done'
         
     - name: Create test database
       run: |
@@ -227,7 +231,7 @@ jobs:
         
     - name: Upload Docker image artifact
       if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: docker-image
         path: otp-auth-image.tar.gz
