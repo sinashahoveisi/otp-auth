@@ -18,6 +18,29 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/": {
+            "get": {
+                "description": "Returns basic service information and documentation links",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Service information",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.ServiceInfoResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/logout": {
             "post": {
                 "security": [
@@ -75,6 +98,29 @@ const docTemplate = `{
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns the health status of the service",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "System"
+                ],
+                "summary": "Health check endpoint",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/controller.HealthResponse"
                         }
                     }
                 }
@@ -328,12 +374,46 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "controller.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "service": {
+                    "type": "string",
+                    "example": "otp-auth-service"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "healthy"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.0.0"
+                }
+            }
+        },
         "controller.LogoutRequest": {
             "type": "object",
             "properties": {
                 "logout_all": {
                     "description": "Optional: logout from all devices",
                     "type": "boolean"
+                }
+            }
+        },
+        "controller.ServiceInfoResponse": {
+            "type": "object",
+            "properties": {
+                "docs": {
+                    "type": "string",
+                    "example": "/swagger/index.html"
+                },
+                "message": {
+                    "type": "string",
+                    "example": "OTP Authentication Service"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         },

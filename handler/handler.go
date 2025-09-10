@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"net/http"
-
 	"otp-auth/config"
 	"otp-auth/controller"
 	_ "otp-auth/docs" // Import for swagger docs
@@ -20,6 +18,7 @@ func RegisterRoutes(
 	otpController *controller.OTPController,
 	userController *controller.UserController,
 	authController *controller.AuthController,
+	healthController *controller.HealthController,
 	jwtService service.JWTService,
 	cfg *config.Config,
 	logger *logger.Logger,
@@ -30,23 +29,9 @@ func RegisterRoutes(
 	e.Use(RequestLoggerMiddleware(logger))
 	e.Use(JWTMiddleware(jwtService, logger))
 
-	// Health check endpoint
-	e.GET("/health", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"status":  "healthy",
-			"service": "otp-auth-service",
-			"version": "1.0.0",
-		})
-	})
-
-	// Root endpoint
-	e.GET("/", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"message": "OTP Authentication Service",
-			"version": "1.0.0",
-			"docs":    "/swagger/index.html",
-		})
-	})
+	// System endpoints
+	e.GET("/health", healthController.HealthCheck)
+	e.GET("/", healthController.ServiceInfo)
 
 	// Swagger documentation
 	if cfg.Swagger.Enabled {

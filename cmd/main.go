@@ -117,13 +117,14 @@ func main() {
 	userController := controller.NewUserController(userService, log)
 	otpController := controller.NewOTPController(otpService, jwtService, v, log)
 	authController := controller.NewAuthController(jwtService, log)
+	healthController := controller.NewHealthController()
 
 	// Initialize Echo server
 	e := echo.New()
 	e.HideBanner = true
 
 	// Register routes
-	handler.RegisterRoutes(e, otpController, userController, authController, jwtService, cfg, log)
+	handler.RegisterRoutes(e, otpController, userController, authController, healthController, jwtService, cfg, log)
 
 	// Start cleanup routine in background
 	go startCleanupRoutine(otpService, log)

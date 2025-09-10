@@ -1,10 +1,34 @@
 basePath: /api/v1
 definitions:
+  controller.HealthResponse:
+    properties:
+      service:
+        example: otp-auth-service
+        type: string
+      status:
+        example: healthy
+        type: string
+      version:
+        example: 1.0.0
+        type: string
+    type: object
   controller.LogoutRequest:
     properties:
       logout_all:
         description: 'Optional: logout from all devices'
         type: boolean
+    type: object
+  controller.ServiceInfoResponse:
+    properties:
+      docs:
+        example: /swagger/index.html
+        type: string
+      message:
+        example: OTP Authentication Service
+        type: string
+      version:
+        example: 1.0.0
+        type: string
     type: object
   entity.AuthResponse:
     properties:
@@ -84,6 +108,21 @@ info:
   title: OTP Authentication Service API
   version: "1.0"
 paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Returns basic service information and documentation links
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.ServiceInfoResponse'
+      summary: Service information
+      tags:
+      - System
   /auth/logout:
     post:
       consumes:
@@ -124,6 +163,21 @@ paths:
       summary: Logout user
       tags:
       - Authentication
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Returns the health status of the service
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.HealthResponse'
+      summary: Health check endpoint
+      tags:
+      - System
   /otp/send:
     post:
       consumes:
