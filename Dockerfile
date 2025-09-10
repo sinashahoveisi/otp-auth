@@ -1,5 +1,5 @@
 # Build stage
-FROM docker.arvancloud.ir/golang:1.25-alpine AS builder
+FROM docker.arvancloud.ir/golang:1.23-alpine AS builder
 
 WORKDIR /app
 
@@ -16,6 +16,7 @@ COPY . .
 # Install swag CLI tool and generate Swagger docs
 RUN go install github.com/swaggo/swag/cmd/swag@latest
 RUN swag init -g cmd/main.go -o docs
+RUN sed -i '/LeftDelim/d; /RightDelim/d' docs/docs.go
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o otp-auth ./cmd/main.go
