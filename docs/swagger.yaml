@@ -1,0 +1,300 @@
+basePath: /api/v1
+definitions:
+  controller.LogoutRequest:
+    properties:
+      logout_all:
+        description: 'Optional: logout from all devices'
+        type: boolean
+    type: object
+  entity.AuthResponse:
+    properties:
+      expires_at:
+        type: string
+      message:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/entity.UserResponse'
+    type: object
+  entity.OTPResponse:
+    properties:
+      expires_at:
+        type: string
+      message:
+        type: string
+      phone_number:
+        type: string
+      token:
+        description: Session token for verification
+        type: string
+    type: object
+  entity.SendOTPRequest:
+    properties:
+      phone_number:
+        type: string
+    required:
+    - phone_number
+    type: object
+  entity.UserResponse:
+    properties:
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      last_login_at:
+        type: string
+      phone_number:
+        type: string
+      registered_at:
+        type: string
+    type: object
+  entity.UsersListResponse:
+    properties:
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+      users:
+        items:
+          $ref: '#/definitions/entity.UserResponse'
+        type: array
+    type: object
+  entity.VerifyOTPRequest:
+    properties:
+      code:
+        type: string
+      token:
+        type: string
+    required:
+    - code
+    - token
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: A backend service for OTP-based authentication and user management
+    with Redis session management
+  title: OTP Authentication Service API
+  version: "1.0"
+paths:
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Logout user and revoke JWT token from Redis session store
+      parameters:
+      - description: Logout options
+        in: body
+        name: request
+        schema:
+          $ref: '#/definitions/controller.LogoutRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Logout user
+      tags:
+      - Authentication
+  /otp/send:
+    post:
+      consumes:
+      - application/json
+      description: Generate and send OTP to the provided phone number
+      parameters:
+      - description: Send OTP Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.SendOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.OTPResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Send OTP
+      tags:
+      - OTP
+  /otp/verify:
+    post:
+      consumes:
+      - application/json
+      description: Verify OTP and authenticate user
+      parameters:
+      - description: Verify OTP Request (token from send response)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/entity.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Verify OTP
+      tags:
+      - OTP
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get paginated list of users with optional search
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Search by phone number
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UsersListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Users
+      tags:
+      - Users
+  /users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get user details by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/entity.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get User
+      tags:
+      - Users
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    description: 'Enter JWT Bearer token in format: Bearer {token}'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

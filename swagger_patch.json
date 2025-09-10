@@ -1,0 +1,10 @@
+{
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "http",
+      "scheme": "bearer",
+      "bearerFormat": "JWT",
+      "description": "Enter JWT Bearer token"
+    }
+  }
+}

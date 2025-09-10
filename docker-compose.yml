@@ -1,0 +1,89 @@
+services:
+  app:
+    build: .
+    ports:
+      - "${HTTP_SERVER_PORT:-8080}:${HTTP_SERVER_PORT:-8080}"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=db
+      - REDIS_HOST=redis
+      - GO_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=db
+      - REDIS_HOST=redis
+      - GO_ENV=development
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "${HTTP_SERVER_PORT:-8080}:${HTTP_SERVER_PORT:-8080}"
+    volumes:
+      - .:/app
+      - /app/tmp  # Anonymous volume for tmp directory to avoid permission issues
+    working_dir: /app
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      - TEST_DB_HOST=db
+      - TEST_DB_PORT=5432
+      - TEST_DB_USER=${DATABASE_USER}
+      - TEST_DB_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+      - TEST_DB_NAME=${DATABASE_NAME}_test
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: ["./scripts/test.sh"]
+
+  db:
+    image: docker.arvancloud.ir/postgres:15
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-otp_auth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-otp_auth}
+      POSTGRES_DB: ${POSTGRES_DB:-otp_auth}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-otp_auth} -d ${POSTGRES_DB:-otp_auth}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: docker.arvancloud.ir/redis:7-alpine
+    container_name: otp-auth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redis_data:

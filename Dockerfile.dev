@@ -1,0 +1,51 @@
+# Development Dockerfile with hot reload
+FROM docker.arvancloud.ir/golang:1.23-alpine
+
+# Install system dependencies
+RUN apk --no-cache add git postgresql-client curl
+
+# Install Air for hot reload (compatible with Go 1.23)
+RUN go install github.com/cosmtrek/air@v1.49.0
+
+# Install swag CLI tool for swagger generation
+RUN go install github.com/swaggo/swag/cmd/swag@latest
+
+# Set working directory
+WORKDIR /app
+
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies with multiple fallback proxies to avoid 403 issues
+ENV GOPROXY=https://goproxy.cn,https://goproxy.io,direct
+ENV GOSUMDB=off
+ENV GO111MODULE=on
+RUN go mod download || \
+    (export GOPROXY=direct && go mod download) || \
+    (export GOPROXY=https://goproxy.cn && go mod download)
+
+# Copy source code
+COPY . .
+
+# Generate swagger docs
+RUN swag init -g cmd/main.go -o docs
+
+# Make scripts executable
+RUN chmod +x ./scripts/*.sh
+
+# Air config is copied with source code above
+
+# Create tmp directory for Air
+RUN mkdir -p tmp
+
+# Set environment variables for development
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GO_ENV=development
+ENV LOG_LEVEL=debug
+
+# Expose port
+EXPOSE 8080
+
+# Default command - use Air for hot reload
+CMD ["air", "-c", ".air.toml"]
